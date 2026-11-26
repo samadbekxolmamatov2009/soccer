@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Dream League Soccer 2026</title>
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
 <div id="gameRoot" class="menu-mode">
@@ -43,9 +46,9 @@
         <div class="meter" id="powerWrap"><div id="powerBar"></div></div>
         <div class="meter"><div id="staminaBar"></div></div>
       </div>
-      <button id="btnC" class="actionBtn"><b>C</b><small>SPRINT</small></button>
-      <button id="btnA" class="actionBtn"><b>A</b><small id="lblA">PAS</small></button>
-      <button id="btnB" class="actionBtn"><b>B</b><small id="lblB">ZARBA</small></button>
+      <button id="btnC" class="actionBtn"><b>C</b><small>SPRINT</small><i class="kh">Shift</i></button>
+      <button id="btnA" class="actionBtn"><b>A</b><small id="lblA">PAS</small><i class="kh">E</i></button>
+      <button id="btnB" class="actionBtn"><b>B</b><small id="lblB">ZARBA</small><i class="kh">Probel</i></button>
     </div>
   </div>
 
@@ -56,8 +59,8 @@
       <div class="opt">
         <div class="optLabel">Qiyinlik</div>
         <div class="chips" data-group="diff">
-          <button data-v="easy">Oson</button>
-          <button data-v="normal" class="on">O'rta</button>
+          <button data-v="easy" class="on">Oson</button>
+          <button data-v="normal">O'rta</button>
           <button data-v="hard">Qiyin</button>
         </div>
       </div>
@@ -90,7 +93,7 @@
           </ul>
         </div>
       </div>
-      <p class="kbd">Kompyuterda: WASD / strelkalar — yurish, J = A, K = B, Shift = C, P = pauza</p>
+      <p class="kbd"><b>Kompyuterda:</b> WASD yoki strelkalar — yurish &nbsp;·&nbsp; <b>E</b> — pas / almashtirish &nbsp;·&nbsp; <b>Probel</b> — zarba (bosib turing) / to'p olish &nbsp;·&nbsp; <b>Shift</b> — sprint &nbsp;·&nbsp; <b>P</b> — pauza &nbsp;·&nbsp; <b>Enter</b> — boshlash</p>
       <p id="rotateHint">Yaxshiroq o'ynash uchun telefonni yotqizing</p>
     </div>
   </div>

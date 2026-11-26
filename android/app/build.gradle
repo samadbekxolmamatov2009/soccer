@@ -1,0 +1,50 @@
+plugins {
+    id 'com.android.application'
+}
+
+def webAssetsDir = layout.buildDirectory.dir("generated/webassets")
+
+android {
+    namespace 'uz.dls2026.game'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'uz.dls2026.game'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Signed with the debug key so the APK installs directly (sideload).
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs += [webAssetsDir.get().asFile]
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds false
+    }
+}
+
+// The web game in the repository root is the single source; copy it into the APK assets.
+def syncWebAssets = tasks.register('syncWebAssets', Copy) {
+    from(rootProject.file('..')) {
+        include 'index.html', 'style.css', 'game.js', 'vendor/**', 'icons/**'
+    }
+    into webAssetsDir.map { it.dir('www') }
+}
+tasks.named('preBuild') { dependsOn syncWebAssets }

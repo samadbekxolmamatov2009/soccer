@@ -22,9 +22,9 @@
   const YOU = "you", RIVAL = "rival";
 
   const DIFFICULTY = {
-    easy: { rivalSpeed: 0.86, steal: 0.6, shootErr: 7, gkSave: 0.42, decision: 0.55 },
-    normal: { rivalSpeed: 0.97, steal: 1.1, shootErr: 5, gkSave: 0.58, decision: 0.4 },
-    hard: { rivalSpeed: 1.08, steal: 1.8, shootErr: 3.2, gkSave: 0.72, decision: 0.28 },
+    easy: { rivalSpeed: 0.8, steal: 0.45, shootErr: 8, gkSave: 0.3, decision: 0.6, gkReact: 1.1 },
+    normal: { rivalSpeed: 0.97, steal: 1.1, shootErr: 5, gkSave: 0.58, decision: 0.4, gkReact: 1.5 },
+    hard: { rivalSpeed: 1.08, steal: 1.8, shootErr: 3.2, gkSave: 0.72, decision: 0.28, gkReact: 1.9 },
   };
 
   const TEAM_STYLE = {
@@ -729,7 +729,7 @@
   }
 
   /* ======================= STATE ======================= */
-  const settings = { diff: "normal", time: "300" };
+  const settings = { diff: "easy", time: "300" };
   const state = {
     phase: "menu",
     prevPhase: null,
@@ -961,21 +961,26 @@
     return v;
   }
 
+  // A = pass / switch, B = shoot / tackle, C = sprint
+  const KEYS_A = ["e", "j", "z"];
+  const KEYS_B = [" ", "k", "x"];
+  const KEYS_C = ["shift", "l", "c"];
   window.addEventListener("keydown", (e) => {
     const k = e.key.toLowerCase();
     keys[k] = true;
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(k)) e.preventDefault();
     if (e.repeat) return;
-    if (k === "j") onAPress();
-    else if (k === "k") onBPress();
-    else if (k === "l" || k === "shift") state.sprintHeld = true;
+    if (KEYS_A.includes(k)) onAPress();
+    else if (KEYS_B.includes(k)) onBPress();
+    else if (KEYS_C.includes(k)) state.sprintHeld = true;
     else if (k === "p" || k === "escape") { if (state.phase === "paused") resumeGame(); else pauseGame(); }
+    else if (k === "enter" && state.phase === "menu") $("startBtn").click();
   });
   window.addEventListener("keyup", (e) => {
     const k = e.key.toLowerCase();
     keys[k] = false;
-    if (k === "k") onBRelease();
-    if (k === "l" || k === "shift") state.sprintHeld = false;
+    if (KEYS_B.includes(k)) onBRelease();
+    if (KEYS_C.includes(k)) state.sprintHeld = false;
   });
   window.addEventListener("blur", () => {
     for (const k in keys) keys[k] = false;
@@ -1124,13 +1129,17 @@
     $powerWrap.classList.remove("show");
     if (ball.owner !== controlled || state.phase !== "play") return;
     const p = controlled;
-    const power = clamp(state.shootCharge, 0.15, 1);
+    const power = clamp(state.shootCharge, 0.45, 1);
     const inDir = getInputDir();
-    let aimX = clamp(-p.pos.x * 0.25, -3, 3) + inDir.x * 7 + rand(-0.5, 0.5) * (1 + power * 2.5);
-    aimX = clamp(aimX, -(GOAL_HW + 2), GOAL_HW + 2);
+    // Aim assist: by default shoot toward the corner the keeper is not covering.
+    const gk = rivalPlayers.find((m) => m.isGK);
+    const openSide = gk.pos.x > 0 ? -1 : 1;
+    let aimX = Math.abs(inDir.x) > 0.3 ? Math.sign(inDir.x) * (GOAL_HW - 1.6) : openSide * (GOAL_HW - 1.8);
+    aimX += rand(-0.5, 0.5) * (0.6 + power * 1.2);
+    aimX = clamp(aimX, -(GOAL_HW - 0.6), GOAL_HW - 0.6);
     const dist = Math.hypot(p.pos.x - aimX, HALF_L - p.pos.z);
-    const speed = 17 + power * 15;
-    const lift = 1.8 + power * power * 8 + dist * 0.035;
+    const speed = 22 + power * 11;
+    const lift = 1.5 + power * power * 6 + dist * 0.03;
     kickBall(p, new V3(aimX, 0, HALF_L), speed, lift, true);
     state.stats.shots.you++;
   }
@@ -1261,7 +1270,7 @@
           p.diveT = DIVE_DUR;
           p.diveSide = Math.sign(cx - p.pos.x) || 1;
         }
-        return { pos: new V3(cx, 0, og + dir * 1.2), mul: 1.9 };
+        return { pos: new V3(cx, 0, og + dir * 1.2), mul: p.team === RIVAL ? state.diff.gkReact : 1.7 };
       }
     }
     if (!ball.owner && uBall < 16 && Math.abs(ball.pos.x) < 14 && Math.hypot(ball.vel.x, ball.vel.z) < 12) {
@@ -1421,7 +1430,7 @@
       const d = hdist(p.pos, ball.pos);
       if (d < bd) { bd = d; best = p; }
     }
-    if (best && best !== controlled && hdist(controlled.pos, ball.pos) - bd > 5) {
+    if (best && best !== controlled && hdist(controlled.pos, ball.pos) - bd > 4) {
       setControlled(best);
       state.switchCooldown = 0.8;
     }
@@ -1632,7 +1641,7 @@
         continue;
       }
       if (p.stunT > 0 || d > 1.0) continue;
-      const rate = p === controlled ? 1.6 : p.team === RIVAL ? state.diff.steal : 1.0;
+      const rate = p === controlled ? 2.2 : p.team === RIVAL ? state.diff.steal : 1.0;
       if (Math.random() < 1 - Math.exp(-rate * dt)) {
         owner.stunT = 0.45;
         giveBall(p);
@@ -1805,7 +1814,6 @@
     const sprinting = state.sprintHeld && moving && state.stamina > 0.02;
     state.stamina = sprinting ? Math.max(0, state.stamina - dt * 0.3) : Math.min(1, state.stamina + dt * 0.14);
     let uDir = inDir, uMul = sprinting ? 1.45 : 1;
-    if (ball.owner === controlled) uMul *= 0.93;
     if (state.phase === "setpiece" && sp.taker === controlled && sp.type === "kickoff" && moving) {
       // Moving the joystick at your own kickoff just starts play with the ball at your feet.
       state.phase = "play";
@@ -2015,6 +2023,10 @@
   resetPositions();
   updateBall(0);
   tick();
+
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
 
   window.__dls = { state, ball, allPlayers, get controlled() { return controlled; } };
 })();
