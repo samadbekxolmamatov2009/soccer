@@ -3,65 +3,122 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#06101a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Dream League Soccer 2026</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="gameRoot" class="menu-mode">
+  <canvas id="gameCanvas"></canvas>
 
-  <div id="gameRoot">
-    <canvas id="gameCanvas"></canvas>
-
-    <!-- HUD -->
-    <div id="hud">
-      <div id="scoreboard">
-        <span class="team-name you">SIZ</span>
-        <span id="score">0 : 0</span>
-        <span class="team-name rival">RAQIB</span>
-      </div>
-      <div id="timer">03:00</div>
+  <div id="hud">
+    <div id="scoreboard">
+      <span class="team you"><i></i>SIZ</span>
+      <span id="score">0 - 0</span>
+      <span class="team rival">RAQIB<i></i></span>
+      <span id="timer">00:00</span>
     </div>
+  </div>
+  <canvas id="radar" width="128" height="200"></canvas>
 
-    <div id="goalFlash">GOL!!!</div>
+  <div id="topRight">
+    <button id="muteBtn" class="iconBtn" aria-label="Ovoz">
+      <svg class="on" viewBox="0 0 24 24"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <svg class="off" viewBox="0 0 24 24"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button id="pauseBtn" class="iconBtn" aria-label="Pauza">
+      <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
+  </div>
 
-    <!-- Start screen -->
-    <div id="startScreen" class="overlay">
-      <h1>DREAM LEAGUE<br><span>SOCCER 2026</span></h1>
-      <p class="hint">Chapdagi joystik bilan yuring. O'ng tomondagi A / B / C tugmalari bilan o'ynang.</p>
-      <ul class="legend">
-        <li><b class="btn-a">A</b> Pas berish</li>
-        <li><b class="btn-b">B</b> Zarba (shoot)</li>
-        <li><b class="btn-c">C</b> Sprint (tezlashish)</li>
-      </ul>
-      <button id="startBtn">O'YINNI BOSHLASH</button>
-    </div>
+  <div id="msg"></div>
+  <div id="goalFlash"><div class="big">GOL!</div><div class="sub" id="goalSub"></div></div>
 
-    <!-- Full time screen -->
-    <div id="endScreen" class="overlay hidden">
-      <h2>O'YIN TUGADI</h2>
-      <p id="finalScore"></p>
-      <button id="restartBtn">QAYTA O'YNASH</button>
-    </div>
-
-    <!-- Controls -->
-    <div id="controls">
-      <div id="joystickZone">
-        <div id="joystickBase">
-          <div id="joystickStick"></div>
-        </div>
+  <div id="controls">
+    <div id="joystickZone"><div id="joystickBase"><div id="joystickStick"></div></div></div>
+    <div id="actionZone">
+      <div id="meters">
+        <div class="meter" id="powerWrap"><div id="powerBar"></div></div>
+        <div class="meter"><div id="staminaBar"></div></div>
       </div>
-
-      <div id="actionZone">
-        <div id="staminaWrap"><div id="staminaBar"></div></div>
-        <div class="buttonsRow">
-          <button id="btnA" class="actionBtn btn-a">A</button>
-          <button id="btnB" class="actionBtn btn-b">B</button>
-          <button id="btnC" class="actionBtn btn-c">C</button>
-        </div>
-      </div>
+      <button id="btnC" class="actionBtn"><b>C</b><small>SPRINT</small></button>
+      <button id="btnA" class="actionBtn"><b>A</b><small id="lblA">PAS</small></button>
+      <button id="btnB" class="actionBtn"><b>B</b><small id="lblB">ZARBA</small></button>
     </div>
   </div>
 
-  <script src="vendor/three.min.js"></script>
-  <script src="game.js"></script>
+  <div id="startScreen" class="overlay">
+    <div class="panel">
+      <div class="logo"><span class="l1">DREAM LEAGUE</span><span class="l2">SOCCER 2026</span></div>
+
+      <div class="opt">
+        <div class="optLabel">Qiyinlik</div>
+        <div class="chips" data-group="diff">
+          <button data-v="easy">Oson</button>
+          <button data-v="normal" class="on">O'rta</button>
+          <button data-v="hard">Qiyin</button>
+        </div>
+      </div>
+      <div class="opt">
+        <div class="optLabel">O'yin vaqti</div>
+        <div class="chips" data-group="time">
+          <button data-v="180">3 daq</button>
+          <button data-v="300" class="on">5 daq</button>
+          <button data-v="480">8 daq</button>
+        </div>
+      </div>
+
+      <button id="startBtn" class="primary">O'YINNI BOSHLASH</button>
+
+      <div class="help">
+        <div>
+          <h4>Hujumda</h4>
+          <ul>
+            <li><b class="k a">A</b> Pas (joystik yo'nalishiga)</li>
+            <li><b class="k b">B</b> Zarba (bosib turing = kuchli)</li>
+            <li><b class="k c">C</b> Sprint</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Himoyada</h4>
+          <ul>
+            <li><b class="k a">A</b> O'yinchini almashtirish</li>
+            <li><b class="k b">B</b> Sirpanib to'p olish</li>
+            <li><b class="k c">C</b> Sprint</li>
+          </ul>
+        </div>
+      </div>
+      <p class="kbd">Kompyuterda: WASD / strelkalar — yurish, J = A, K = B, Shift = C, P = pauza</p>
+      <p id="rotateHint">Yaxshiroq o'ynash uchun telefonni yotqizing</p>
+    </div>
+  </div>
+
+  <div id="pauseScreen" class="overlay hidden">
+    <div class="panel small">
+      <h2>PAUZA</h2>
+      <button id="resumeBtn" class="primary">DAVOM ETISH</button>
+      <button id="pauseRestartBtn" class="secondary">QAYTA BOSHLASH</button>
+      <button id="pauseMenuBtn" class="secondary">BOSH MENYU</button>
+    </div>
+  </div>
+
+  <div id="endScreen" class="overlay hidden">
+    <div class="panel small">
+      <h2 id="resultTitle">O'YIN TUGADI</h2>
+      <p id="finalScore"></p>
+      <div class="stats">
+        <div class="statRow" id="statShots"></div>
+        <div class="statRow" id="statPoss"></div>
+      </div>
+      <button id="restartBtn" class="primary">QAYTA O'YNASH</button>
+      <button id="endMenuBtn" class="secondary">BOSH MENYU</button>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="game.js"></script>
 </body>
 </html>
