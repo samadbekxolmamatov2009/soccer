@@ -51,11 +51,12 @@
   const other = (team) => (team === YOU ? RIVAL : YOU);
 
   /* ======================= RENDERER / SCENE ======================= */
+  const IS_MOBILE = window.matchMedia("(pointer: coarse)").matches;
   const canvas = $("gameCanvas");
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_MOBILE, powerPreference: "high-performance" });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1.5 : 2));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = IS_MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
@@ -95,7 +96,7 @@
   const sun = new THREE.DirectionalLight(0xfff6e8, 2.6);
   sun.position.set(30, 55, -22);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(IS_MOBILE ? 1024 : 2048, IS_MOBILE ? 1024 : 2048);
   Object.assign(sun.shadow.camera, { left: -64, right: 64, top: 64, bottom: -64, near: 1, far: 160 });
   sun.shadow.bias = -0.0005;
   sun.shadow.normalBias = 0.02;
@@ -317,7 +318,7 @@
       scene.add(mesh);
       for (let r = 0; r < rows; r++) {
         for (let t = -s.len / 2 + 1; t < s.len / 2 - 1; t += 0.75) {
-          if (Math.random() < 0.12) continue;
+          if (Math.random() < (IS_MOBILE ? 0.5 : 0.12)) continue;
           const p = s.origin.clone().addScaledVector(out, r * rowD + rowD * 0.55).addScaledVector(along, t);
           p.y = (r + 1) * rowH + 0.36;
           seats.push(p.x, p.y, p.z, s.rotY, Math.random() * Math.PI * 2);
@@ -1699,7 +1700,8 @@
     updateBall(0);
     state.setPiece = { type, team, taker, t: 0 };
     state.phase = "setpiece";
-    showMessage(SETPIECE_LABEL[type], 1300);
+    if (taker === controlled) showMessage(`${SETPIECE_LABEL[type]} — A: pas${type === "corner" ? ", B: kross" : ""}`, 2500);
+    else showMessage(SETPIECE_LABEL[type], 1300);
     sfx.whistle(1);
   }
 
@@ -1804,7 +1806,11 @@
     state.stamina = sprinting ? Math.max(0, state.stamina - dt * 0.3) : Math.min(1, state.stamina + dt * 0.14);
     let uDir = inDir, uMul = sprinting ? 1.45 : 1;
     if (ball.owner === controlled) uMul *= 0.93;
-    if (state.phase === "setpiece" && (sp.taker === controlled || sp.type === "kickoff")) {
+    if (state.phase === "setpiece" && sp.taker === controlled && sp.type === "kickoff" && moving) {
+      // Moving the joystick at your own kickoff just starts play with the ball at your feet.
+      state.phase = "play";
+      state.setPiece = null;
+    } else if (state.phase === "setpiece" && (sp.taker === controlled || sp.type === "kickoff")) {
       if (sp.taker === controlled && moving) controlled.turnTo(Math.atan2(inDir.x, inDir.z), dt * 8);
       uDir = null;
     } else if (state.passTarget === controlled && !ball.owner && !moving) {
@@ -1917,7 +1923,7 @@
     root.classList.remove("menu-mode");
     startKickoff(YOU);
     followCamera(0, true);
-    showMessage("O'YIN BOSHLANDI!", 1600);
+    showMessage("O'YIN BOSHLANDI! Joystik — yurish, A — pas, B — zarba", 3000);
   }
 
   function toMenu() {
@@ -1978,13 +1984,22 @@
 
   /* ======================= MAIN LOOP ======================= */
   const clock = new THREE.Clock();
-  function tick() {
-    requestAnimationFrame(tick);
-    const dt = Math.min(clock.getDelta(), 1 / 30);
+  const STEP = 1 / 60, MAX_STEPS = 10;
+  let acc = 0;
+  function stepSim(dt) {
     const ph = state.phase;
     if (ph === "play" || ph === "setpiece") simulate(dt);
     else if (ph === "goal") goalPhase(dt);
     else if (ph === "halftime") halftimePhase(dt);
+  }
+  function tick() {
+    requestAnimationFrame(tick);
+    const dt = Math.min(clock.getDelta(), 0.2);
+    // Fixed-step simulation so game speed stays real-time even on slow phones.
+    acc += dt;
+    let steps = 0;
+    while (acc >= STEP && steps < MAX_STEPS) { stepSim(STEP); acc -= STEP; steps++; }
+    if (steps === MAX_STEPS) acc = 0;
 
     if (state.phase !== "paused") {
       for (const p of allPlayers) p.animate(dt);
